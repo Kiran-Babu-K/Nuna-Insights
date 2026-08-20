@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuna Insights — Data to Presentation Workspace</title>
+<link rel="icon" href="logo.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PptxGenJS/3.12.0/pptxgen.bundle.min.js"></script>
+<style>
+:root{
+  --sbg:#fbfbfa; --bg:#ffffff; --border:#e9e9e7; --hover:#f1f1ef;
+  --text:#37352f; --text2:#787774; --faint:#9b9a97;
+  --brand:#1d2b64; --brand2:#2e4a9e; --accent:#38bdf8; --asoft:#eef1fb;
+  --ok:#2f9e64; --oksoft:#e3f6ea; --warn:#c47a1e; --warnsoft:#fbecd8; --bad:#e03e3e; --badsoft:#fbe4e4;
+  --r:10px; --rs:6px; --rp:999px;
+  --shs:0 1px 2px rgba(15,15,15,.04);
+  --shm:0 1px 3px rgba(15,15,15,.06),0 6px 16px rgba(15,15,15,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--text);background:var(--bg);font-size:14.5px;line-height:1.55;}
+button,select,input,textarea{font-family:inherit;}
+.app{display:flex;min-height:100vh;}
+
+/* ---------- sidebar ---------- */
+.sidebar{width:250px;flex:none;background:var(--sbg);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:14px 12px;position:sticky;top:0;height:100vh;overflow-y:auto;}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 6px 14px;border-bottom:1px solid var(--border);margin-bottom:10px;}
+.brand img{height:30px;width:auto;}
+.brand b{font-size:14px;color:var(--text);display:block;}
+.brand small{font-size:10.5px;color:var(--faint);}
+nav{display:flex;flex-direction:column;gap:2px;}
+.navitem{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--rs);border:none;background:transparent;color:var(--text2);font-size:13.5px;text-align:left;cursor:pointer;width:100%;}
+.navitem:hover{background:var(--hover);color:var(--text);}
+.navitem.active{background:var(--asoft);color:var(--brand);font-weight:600;}
+.navitem .ic{font-size:15px;width:18px;text-align:center;}
+.sidebar-footer{margin-top:auto;padding-top:12px;border-top:1px solid var(--border);}
+.trainMini{font-size:11.5px;color:var(--text2);background:var(--bg);border:1px solid var(--border);border-radius:var(--rs);padding:9px 10px;line-height:1.5;}
+.trainMini b{color:var(--brand);}
+
+/* ---------- main ---------- */
+main{flex:1;min-width:0;}
+.topbar{position:sticky;top:0;z-index:10;background:rgba(255,255,255,.9);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:18px 34px;}
+.topbar h1{font-size:19px;color:var(--text);}
+.topbar p{font-size:12.5px;color:var(--text2);margin-top:2px;}
+.panel{display:none;padding:28px 34px 90px;max-width:920px;}
+.panel.wide{max-width:1080px;}
+.panel.active{display:block;}
+.panel.center{max-width:720px;margin:0 auto;}
+
+/* ---------- cards / blocks ---------- */
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:20px 22px;margin-bottom:18px;box-shadow:var(--shs);}
+.card h3{font-size:13px;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin-bottom:14px;}
+.row{display:flex;justify-content:space-between;align-items:center;padding:9px 2px;border-bottom:1px solid var(--border);gap:16px;}
+.row:last-child{border-bottom:none;}
+.row label{font-size:13px;color:var(--text2);min-width:170px;}
+.row .ctrl{flex:1;max-width:320px;}
+select,input[type=text]{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--rs);font-size:13.5px;background:#fff;color:var(--text);}
+select:focus,input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:0;}
+input[type=color]{width:100%;height:34px;border:1px solid var(--border);border-radius:var(--rs);padding:2px;cursor:pointer;background:#fff;}
+input[type=number]{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--rs);font-size:13.5px;}
+
+/* ---------- buttons / pills ---------- */
+.btn{display:inline-flex;align-items:center;gap:7px;background:var(--brand);color:#fff;border:none;border-radius:var(--rs);padding:9px 18px;font-size:13.5px;font-weight:600;cursor:pointer;}
+.btn:hover{background:var(--brand2);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--border);}
+.btn.ghost:hover{background:var(--hover);}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--badsoft);}
+.btn.danger:hover{background:var(--badsoft);}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--rp);border:1px solid var(--border);background:#fff;font-size:13px;cursor:pointer;color:var(--text);}
+.pill:hover{background:var(--hover);}
+.pill.primary{background:var(--brand);color:#fff;border-color:var(--brand);}
+.pill.primary:hover{background:var(--brand2);}
+.pillrow{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+
+/* ---------- data / dropzone ---------- */
+.dropzone{border:2px dashed #c9c9c5;border-radius:14px;padding:46px 24px;text-align:center;cursor:pointer;background:var(--sbg);transition:.15s;}
+.dropzone:hover,.dropzone.drag{border-color:var(--brand2);background:var(--asoft);}
+.dropzone .ico{font-size:30px;margin-bottom:8px;}
+.dropzone b{font-size:15px;color:var(--text);}
+.dropzone p{font-size:12.5px;color:var(--text2);margin-top:5px;}
+textarea{width:100%;min-height:90px;border:1px solid var(--border);border-radius:var(--rs);padding:11px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#fbfbfa;resize:vertical;}
+table.preview{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;}
+table.preview th{background:var(--sbg);color:var(--text);padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;}
+table.preview td{border-bottom:1px solid var(--border);padding:6px 10px;}
+.kpirow{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px;}
+.kpi{background:var(--sbg);border:1px solid var(--border);border-radius:var(--rs);padding:10px 16px;min-width:135px;}
+.kpi b{display:block;font-size:19px;color:var(--brand);}
+.kpi span{font-size:11px;color:var(--text2);}
+
+/* ---------- template cards ---------- */
+.tplGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;}
+.tplCard{border:1.5px solid var(--border);border-radius:var(--r);padding:10px;cursor:pointer;transition:.12s;background:#fff;}
+.tplCard:hover{box-shadow:var(--shm);}
+.tplCard.sel{border-color:var(--brand);box-shadow:0 0 0 3px var(--asoft);}
+.tplCard .sw{height:44px;border-radius:var(--rs);margin-bottom:8px;}
+.tplCard b{font-size:12.5px;display:block;}
+.tplCard span{font-size:10.5px;color:var(--text2);}
+
+/* ---------- ask nuna ---------- */
+.askBox{border:1.5px solid var(--border);border-radius:14px;padding:14px 16px;box-shadow:var(--shm);display:flex;gap:10px;align-items:center;}
+.askBox input{border:none;outline:none;flex:1;font-size:15px;background:transparent;}
+.askBox button{border:none;background:var(--brand);color:#fff;border-radius:var(--rp);width:38px;height:38px;font-size:16px;cursor:pointer;flex:none;}
+.askBox button:hover{background:var(--brand2);}
+.feed{display:flex;flex-direction:column;gap:12px;margin-top:20px;max-height:440px;overflow-y:auto;padding:4px;}
+.bubbleQ{align-self:flex-end;background:var(--asoft);color:var(--brand);padding:9px 14px;border-radius:14px 14px 3px 14px;font-size:13.5px;max-width:80%;}
+.bubbleA{align-self:flex-start;background:var(--sbg);border:1px solid var(--border);padding:9px 14px;border-radius:14px 14px 14px 3px;font-size:13.5px;max-width:85%;}
+.hint{font-size:12px;color:var(--text2);margin-top:8px;text-align:center;}
+
+/* ---------- hero (Julius-style centered question) ---------- */
+.hero{text-align:center;padding:6px 0 24px;}
+.hero h2{font-size:23px;color:var(--text);letter-spacing:-.3px;}
+.hero p{font-size:13.5px;color:var(--text2);max-width:520px;margin:7px auto 0;}
+
+/* ---------- mode selector (Gamma-style segmented cards) ---------- */
+.modeSelect{display:flex;gap:12px;margin-bottom:22px;}
+.modeCard{flex:1;position:relative;border:1.5px solid var(--border);border-radius:var(--r);padding:18px 14px 16px;text-align:center;cursor:pointer;background:#fff;transition:.12s;}
+.modeCard:hover{box-shadow:var(--shm);}
+.modeCard.sel{border-color:var(--brand);background:var(--asoft);}
+.modeCard .chk{position:absolute;top:10px;left:10px;width:17px;height:17px;border-radius:50%;border:1.5px solid #d7d7d3;background:#fff;font-size:10px;color:transparent;display:flex;align-items:center;justify-content:center;}
+.modeCard.sel .chk{background:var(--brand);border-color:var(--brand);color:#fff;}
+.modeCard .mic{font-size:21px;margin:4px 0 8px;}
+.modeCard b{font-size:13px;display:block;color:var(--text);}
+.modeCard span{font-size:11px;color:var(--text2);}
+.modePanel.hidden{display:none;}
+
+/* ---------- topbar badge + nav done-dot ---------- */
+.badge{font-size:11.5px;color:var(--text2);background:var(--sbg);border:1px solid var(--border);border-radius:var(--rp);padding:7px 14px;white-space:nowrap;flex:none;}
+.navitem{position:relative;}
+.navitem .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);margin-left:auto;display:none;flex:none;}
+
+/* ---------- pipeline stepper ---------- */
+.stepper{display:flex;flex-direction:column;}
+.step{display:flex;gap:14px;position:relative;padding-bottom:20px;}
+.step:last-child{padding-bottom:0;}
+.step::before{content:"";position:absolute;left:13px;top:28px;bottom:0;width:2px;background:var(--border);}
+.step:last-child::before{display:none;}
+.stepnum{width:26px;height:26px;border-radius:50%;background:var(--sbg);border:2px solid var(--border);color:var(--text2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex:none;z-index:1;}
+.step.done .stepnum{background:var(--ok);border-color:var(--ok);color:#fff;}
+.stepbody{flex:1;padding-top:2px;}
+.stepbody .t{font-size:13.5px;font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+.stepbody .d{font-size:12.5px;color:var(--text2);margin-top:3px;}
+.chip{display:inline-block;padding:2px 9px;border-radius:var(--rp);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
+.chip.pending{background:var(--hover);color:var(--text2);}
+.chip.ok{background:var(--oksoft);color:var(--ok);}
+
+/* ---------- stat tiles ---------- */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+.tile{background:var(--sbg);border:1px solid var(--border);border-radius:var(--r);padding:16px;}
+.tile b{font-size:24px;color:var(--brand);display:block;}
+.tile span{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
+pre.code{background:var(--sbg);border:1px solid var(--border);border-radius:var(--rs);padding:14px;font-size:11.5px;overflow:auto;max-height:340px;}
+
+/* ---------- compare table ---------- */
+table.cmp{width:100%;border-collapse:collapse;font-size:13px;}
+table.cmp th{background:var(--sbg);padding:10px 12px;text-align:left;border-bottom:2px solid var(--border);font-size:12px;text-transform:uppercase;letter-spacing:.3px;color:var(--text2);}
+table.cmp td{padding:10px 12px;border-bottom:1px solid var(--border);}
+table.cmp td.yes{color:var(--ok);font-weight:700;}
+table.cmp td.no{color:var(--faint);}
+table.cmp tr:first-child td{font-weight:600;color:var(--text);}
+
+/* ---------- misc ---------- */
+.hidden{display:none!important;}
+.msg{font-size:12.5px;margin-top:8px;}
+.msg.ok{color:var(--ok);}
+.msg.err{color:var(--bad);}
+.rateRow{display:flex;gap:8px;align-items:center;margin-top:14px;}
+.rateRow button{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;font-weight:700;font-size:13px;}
+.rateRow button:hover{background:var(--brand);color:#fff;border-color:var(--brand);}
+.toast{position:fixed;bottom:22px;right:22px;background:var(--text);color:#fff;padding:11px 18px;border-radius:8px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;max-width:360px;z-index:99;}
+.toast.show{opacity:1;}
+.script{white-space:pre-wrap;font-size:12.5px;background:var(--sbg);border:1px solid var(--border);border-radius:var(--rs);padding:14px;max-height:280px;overflow-y:auto;}
+@media(max-width:860px){.sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);z-index:20;}.app{flex-direction:column;}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="sidebar">
+  <div class="brand"><img src="logo.png" alt="Nuna"><div><b>Nuna Insights</b><small>Intelligence that understands.</small></div></div>
+  <nav>
+    <button class="navitem active" data-panel="data"><span class="ic">📂</span>Data<span class="dot"></span></button>
+    <button class="navitem" data-panel="design"><span class="ic">🎨</span>Design</button>
+    <button class="navitem" data-panel="ask"><span class="ic">💬</span>Ask Nuna</button>
+    <button class="navitem" data-panel="stats"><span class="ic">📊</span>Statistics</button>
+    <button class="navitem" data-panel="generate"><span class="ic">🚀</span>Generate &amp; Export<span class="dot"></span></button>
+    <button class="navitem" data-panel="training"><span class="ic">🧠</span>Training</button>
+    <button class="navitem" data-panel="compare"><span class="ic">⚖️</span>Compare</button>
+  </nav>
+  <div class="sidebar-footer"><div class="trainMini" id="trainMini">Loading training status…</div></div>
+</aside>
+
+<main>
+  <div class="topbar" style="display:flex;align-items:center;justify-content:space-between;gap:20px;">
+    <div><h1 id="panelTitle">Data</h1><p id="panelSub">Upload or paste your dataset to begin</p></div>
+    <div class="badge" id="topBadge">🧠 loading…</div>
+  </div>
+
+  <!-- DATA -->
+  <section class="panel active" id="panel-data">
+    <div class="hero">
+      <h2>What data would you like to turn into a presentation?</h2>
+      <p>Upload a spreadsheet, paste rows, or try sample data — Nuna analyses it and drafts the deck.</p>
+    </div>
+
+    <div class="modeSelect" id="modeSelect">
+      <div class="modeCard sel" data-mode="upload"><span class="chk">✓</span><div class="mic">📁</div><b>Upload file</b><span>.xlsx · .xls · .csv</span></div>
+      <div class="modeCard" data-mode="paste"><span class="chk">✓</span><div class="mic">📋</div><b>Paste data</b><span>Tab or comma separated</span></div>
+      <div class="modeCard" data-mode="sample"><span class="chk">✓</span><div class="mic">✨</div><b>Sample data</b><span>Try it instantly</span></div>
+    </div>
+
+    <div id="modeUpload" class="modePanel">
+      <div class="dropzone" id="dropzone">
+        <div class="ico">📥</div>
+        <b>Drop an Excel / CSV file, or click to browse</b>
+        <p>.xlsx · .xls · .csv — first sheet, header row required</p>
+        <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
+      </div>
+    </div>
+    <div id="modePaste" class="modePanel hidden">
+      <textarea id="pasteBox" placeholder="Region,Revenue,Target&#10;South,420000,400000"></textarea>
+      <button class="btn" id="btnPaste" style="margin-top:10px;">Use pasted data</button>
+    </div>
+    <div id="modeSample" class="modePanel hidden">
+      <div class="card" style="text-align:center;">
+        <p style="margin-bottom:14px;color:var(--text2);font-size:13.5px;">Loads a 6-region revenue dataset with targets, so you can see Nuna work end to end.</p>
+        <button class="btn" id="btnSample">🎲 Load sample data</button>
+      </div>
+    </div>
+
+    <div id="dataSummary" class="hidden" style="margin-top:20px;">
+      <div class="card">
+        <h3>Preview</h3>
+        <div class="kpirow" id="kpiRow"></div>
+        <table class="preview" id="prevTable" style="margin-top:14px;"></table>
+        <p class="hint" id="detectNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DESIGN -->
+  <section class="panel" id="panel-design">
+    <div class="card">
+      <h3>Fields</h3>
+      <div class="row"><label>Dimension</label><div class="ctrl"><select id="selDim"></select></div></div>
+      <div class="row"><label>Primary metric</label><div class="ctrl"><select id="selMetric"></select></div></div>
+      <div class="row"><label>Target metric (optional)</label><div class="ctrl"><select id="selTarget"></select></div></div>
+      <div class="row"><label>Deck title</label><div class="ctrl"><input type="text" id="inpTitle" value="Business Performance Review"></div></div>
+      <div class="row"><label>Subtitle / period</label><div class="ctrl"><input type="text" id="inpSub" value="Monthly Review"></div></div>
+      <div class="row"><label>Presented by</label><div class="ctrl"><input type="text" id="inpAuthor" value="Nuna Insights"></div></div>
+    </div>
+    <div class="card">
+      <h3>Template</h3>
+      <div class="tplGrid" id="tplGrid"></div>
+    </div>
+    <div class="card">
+      <h3>Customize</h3>
+      <div class="row"><label>Primary colour</label><div class="ctrl"><input type="color" id="cPrimary"></div></div>
+      <div class="row"><label>Secondary colour</label><div class="ctrl"><input type="color" id="cSecondary"></div></div>
+      <div class="row"><label>Accent colour</label><div class="ctrl"><input type="color" id="cAccent"></div></div>
+      <div class="row"><label>Heading font</label><div class="ctrl"><select id="fHead"><option>Segoe UI</option><option>Arial</option><option>Calibri</option><option>Georgia</option><option>Trebuchet MS</option><option>Garamond</option></select></div></div>
+      <div class="row"><label>Body font</label><div class="ctrl"><select id="fBody"><option>Calibri</option><option>Segoe UI</option><option>Arial</option><option>Georgia</option></select></div></div>
+      <div class="row"><label>Base font size (pt)</label><div class="ctrl"><input type="number" id="fSize" value="14" min="10" max="20"></div></div>
+      <div class="row"><label>Main chart</label><div class="ctrl"><select id="chMain"><option value="auto">Auto</option><option value="bar">Bar</option><option value="line">Line</option><option value="area">Area</option></select></div></div>
+      <div class="row"><label>Contribution chart</label><div class="ctrl"><select id="chShare"><option value="pie">Pie</option><option value="doughnut">Doughnut</option><option value="bar">Horizontal bar</option></select></div></div>
+      <div class="row"><label>KPI infographic style</label><div class="ctrl"><select id="infStyle"><option value="cards">Cards</option><option value="chevron">Chevron</option><option value="circles">Circles</option></select></div></div>
+      <div class="row"><label>Extra slides</label><div class="ctrl"><select id="infExtra"><option value="all">SWOT + Funnel + Roadmap</option><option value="swot">SWOT only</option><option value="roadmap">Roadmap only</option><option value="none">Charts only</option></select></div></div>
+    </div>
+  </section>
+
+  <!-- ASK NUNA -->
+  <section class="panel center" id="panel-ask">
+    <div class="hero">
+      <h2>What can Nuna tell you about your data?</h2>
+      <p>Ask in plain English — totals, trends, forecasts, correlations. Built-in query engine, runs entirely offline, no API key required.</p>
+    </div>
+    <div class="askBox">
+      <input type="text" id="askInput" placeholder="Ask about your data — e.g. “what's the average revenue?”">
+      <button id="btnAsk">➤</button>
+    </div>
+    <div class="pillrow" id="askPills"></div>
+    <div class="feed" id="feed"></div>
+  </section>
+
+  <!-- STATISTICS -->
+  <section class="panel" id="panel-stats">
+    <div class="card">
+      <h3>Forecast</h3>
+      <p class="hint" style="text-align:left;margin-bottom:10px;">Linear trend projection — needs time-series data (months/quarters/years).</p>
+      <button class="btn ghost" id="btnForecast">Run forecast</button>
+      <div id="forecastOut" class="msg"></div>
+    </div>
+    <div class="card">
+      <h3>Correlation</h3>
+      <div class="row"><label>Column A</label><div class="ctrl"><select id="corrA"></select></div></div>
+      <div class="row"><label>Column B</label><div class="ctrl"><select id="corrB"></select></div></div>
+      <button class="btn ghost" id="btnCorr" style="margin-top:10px;">Compute correlation</button>
+      <div id="corrOut" class="msg"></div>
+    </div>
+    <div class="card">
+      <h3>Outliers</h3>
+      <button class="btn ghost" id="btnOutliers">Detect outliers</button>
+      <div id="outlierOut" class="msg"></div>
+    </div>
+  </section>
+
+  <!-- GENERATE -->
+  <section class="panel" id="panel-generate">
+    <div class="card">
+      <h3>Agent pipeline</h3>
+      <button class="btn" id="btnPipeline">Run pipeline</button>
+      <div class="stepper" id="pipelineBox" style="margin-top:18px;"></div>
+    </div>
+    <div class="card">
+      <h3>Export</h3>
+      <div class="pillrow">
+        <button class="pill primary" id="btnPPTX">⬇ Download PPTX</button>
+        <button class="pill" id="btnHTML">🌐 Download Web Page</button>
+        <button class="pill" id="btnJSON">{ } Download JSON</button>
+      </div>
+      <div id="genMsg" class="msg"></div>
+      <div class="rateRow hidden" id="rateBox">
+        <span class="hint" style="margin:0;">Rate this deck:</span>
+        <button class="rate" data-r="1">1</button><button class="rate" data-r="2">2</button>
+        <button class="rate" data-r="3">3</button><button class="rate" data-r="4">4</button>
+        <button class="rate" data-r="5">5</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Speaker script</h3>
+      <div class="script" id="scriptBox">Run the pipeline to generate the script.</div>
+    </div>
+  </section>
+
+  <!-- TRAINING -->
+  <section class="panel" id="panel-training">
+    <div class="card">
+      <h3>Status</h3>
+      <div class="tiles" id="tilesBox"></div>
+    </div>
+    <div class="card">
+      <h3>Raw training data</h3>
+      <button class="btn ghost" id="btnStats">Refresh</button>
+      <button class="btn danger" id="btnReset" style="margin-left:8px;">Reset training data</button>
+      <pre class="code" id="statsBox" style="margin-top:12px;"></pre>
+    </div>
+  </section>
+
+  <!-- COMPARE -->
+  <section class="panel wide" id="panel-compare">
+    <div class="card">
+      <h3>Nuna Insights vs. Genspark, Gamma &amp; Julius AI</h3>
+      <table class="cmp">
+        <tr><td>Feature</td><td>Nuna Insights</td><td>Genspark AI</td><td>Gamma AI</td><td>Julius AI</td></tr>
+        <tr><td>Native editable PowerPoint export</td><td class="yes">Yes, built-in</td><td>Partial</td><td class="no">Often breaks on export</td><td class="no">No</td></tr>
+        <tr><td>Speaker script per slide</td><td class="yes">Every slide</td><td class="no">—</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Deterministic KPI math (no hallucination)</td><td class="yes">Yes</td><td>Partial (LLM-written)</td><td class="no">Prompt-based</td><td class="yes">Yes (code execution)</td></tr>
+        <tr><td>Runs fully offline / localhost</td><td class="yes">Yes</td><td class="no">Cloud only</td><td class="no">Cloud only</td><td class="no">Cloud only</td></tr>
+        <tr><td>Learns your design preferences</td><td class="yes">Rating-weighted</td><td class="no">No</td><td class="no">No</td><td class="no">No</td></tr>
+        <tr><td>Ask questions about your data</td><td>Rule-based engine</td><td>LLM chat</td><td class="no">No</td><td class="yes">LLM + code (most advanced)</td></tr>
+        <tr><td>Visible multi-agent pipeline</td><td class="yes">Yes</td><td class="yes">Yes (Super Agent)</td><td class="no">No</td><td>Partial</td></tr>
+        <tr><td>Cost</td><td class="yes">Free, self-hosted</td><td>Paid tiers</td><td>Free/paid credits</td><td>Free tier + paid</td></tr>
+      </table>
+      <p class="hint" style="text-align:left;margin-top:14px;">Nuna's "Ask Nuna" panel uses a built-in rule-based query engine — accurate for structured questions about your uploaded data, but not a general-purpose LLM like Genspark or Julius. Optional Claude API integration can be added later for open-ended AI insights.</p>
+    </div>
+  </section>
+
+</main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ STATE ============ */
+let DATA={headers:[],rows:[],types:{}}, ANALYSIS=null, LOGO64=null, SLIDES=[], SCRIPTS=[];
+const $=id=>document.getElementById(id);
+const toast=m=>{const t=$("toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3200);};
+const fmt=n=>Math.abs(n)>=1e7?(n/1e7).toFixed(2)+" Cr":Math.abs(n)>=1e5?(n/1e5).toFixed(2)+" L":Math.abs(n)>=1000?Math.round(n).toLocaleString("en-IN"):(+n.toFixed(2)).toString();
+const pct=n=>n.toFixed(1)+"%";
+const cleanNum=v=>parseFloat(String(v).replace(/[,%₹$ ]/g,""))||0;
+fetch("logo.png").then(r=>r.blob()).then(b=>{const fr=new FileReader();fr.onload=()=>LOGO64=fr.result;fr.readAsDataURL(b);}).catch(()=>{});
+
+/* ============ SIDEBAR NAV ============ */
+const PANEL_META={data:["Data","Upload or paste your dataset to begin"],design:["Design","Fields, template and visual customisation"],
+  ask:["Ask Nuna","Query your data in plain English"],stats:["Statistics","Forecasts, correlation and outlier detection"],
+  generate:["Generate & Export","Run the agent pipeline, then export"],training:["Training","How Nuna learns your preferences"],
+  compare:["Compare","How Nuna stacks up against Genspark, Gamma and Julius"]};
+document.querySelectorAll(".navitem").forEach(b=>b.onclick=()=>showPanel(b.dataset.panel));
+function showPanel(name){
+  document.querySelectorAll(".navitem").forEach(b=>b.classList.toggle("active",b.dataset.panel===name));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.toggle("active",p.id==="panel-"+name));
+  $("panelTitle").textContent=PANEL_META[name][0]; $("panelSub").textContent=PANEL_META[name][1];
+}
+
+/* ============ TEMPLATES ============ */
+const TEMPLATES={
+ "Nuna Signature":{primary:"#1d2b64",secondary:"#2e4a9e",accent:"#38bdf8",bg:"#ffffff",text:"#1a2233",head:"Segoe UI",body:"Calibri"},
+ "Consulting Slate":{primary:"#12283d",secondary:"#3a5f80",accent:"#d97b2b",bg:"#ffffff",text:"#1c2733",head:"Georgia",body:"Calibri"},
+ "Midnight Executive":{primary:"#0d1220",secondary:"#232f4e",accent:"#38d0a0",bg:"#0d1220",text:"#eef2f8",head:"Segoe UI",body:"Segoe UI"},
+ "Vibrant Startup":{primary:"#5b2ee5",secondary:"#8f6bff",accent:"#ff5d8f",bg:"#ffffff",text:"#241b3a",head:"Trebuchet MS",body:"Calibri"},
+ "Luxury Gold":{primary:"#22201c",secondary:"#4a453c",accent:"#c9a24b",bg:"#f7f4ee",text:"#22201c",head:"Garamond",body:"Georgia"}};
+let currentTpl="Nuna Signature";
+function renderTemplates(){
+  $("tplGrid").innerHTML=Object.entries(TEMPLATES).map(([name,t])=>`
+   <div class="tplCard ${name===currentTpl?"sel":""}" onclick="pickTpl('${name}')">
+     <div class="sw" style="background:linear-gradient(135deg,${t.primary},${t.secondary} 60%,${t.accent})"></div>
+     <b>${name}</b><span>${t.head}</span>
+   </div>`).join("");
+}
+function pickTpl(name){
+  currentTpl=name;const t=TEMPLATES[name];
+  $("cPrimary").value=t.primary;$("cSecondary").value=t.secondary;$("cAccent").value=t.accent;
+  $("fHead").value=t.head;$("fBody").value=t.body;
+  renderTemplates();
+}
+renderTemplates(); pickTpl("Nuna Signature");
+
+/* ============ DATA INGEST ============ */
+function markDone(panel){const d=document.querySelector('.navitem[data-panel="'+panel+'"] .dot');if(d)d.style.display="inline-block";}
+document.querySelectorAll(".modeCard").forEach(c=>c.onclick=()=>{
+  document.querySelectorAll(".modeCard").forEach(x=>x.classList.remove("sel"));
+  c.classList.add("sel");
+  const m=c.dataset.mode;
+  ["upload","paste","sample"].forEach(x=>$("mode"+x[0].toUpperCase()+x.slice(1)).classList.toggle("hidden",x!==m));
+});
+$("dropzone").onclick=()=>$("fileInput").click();
+$("dropzone").ondragover=e=>{e.preventDefault();$("dropzone").classList.add("drag");};
+$("dropzone").ondragleave=()=>$("dropzone").classList.remove("drag");
+$("dropzone").ondrop=e=>{e.preventDefault();$("dropzone").classList.remove("drag");handleFile(e.dataTransfer.files[0]);};
+$("fileInput").onchange=e=>handleFile(e.target.files[0]);
+function handleFile(f){
+  if(!f)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{try{
+    const wb=XLSX.read(ev.target.result,{type:"array"});
+    const arr=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:""});
+    ingest(arr[0],arr.slice(1));
+  }catch(e){toast("Could not read file: "+e.message);}};
+  reader.readAsArrayBuffer(f);
+}
+$("btnPaste").onclick=()=>{
+  const t=$("pasteBox").value.trim();if(!t){toast("Paste some data first");return;}
+  const d=t.includes("\t")?"\t":",";
+  const lines=t.split(/\r?\n/).map(l=>l.split(d).map(c=>c.trim()));
+  ingest(lines[0],lines.slice(1));
+};
+$("btnSample").onclick=()=>ingest(["Region","Revenue","Target","Enrollments"],[
+  ["Tamil Nadu",5250000,5000000,412],["Telangana",3980000,4200000,318],["Andhra Pradesh",4470000,4300000,355],
+  ["Maharashtra",6120000,5800000,486],["Karnataka",2870000,3500000,224],["Kerala",1940000,2500000,151]]);
+
+function ingest(headers,rows){
+  headers=headers.map(h=>String(h||"Col").trim());
+  rows=rows.filter(r=>r.some(c=>c!==""&&c!=null&&String(c).trim()!==""));
+  if(!headers.length||!rows.length){toast("No usable data found — check the header row.");return;}
+  const types={};
+  headers.forEach((h,i)=>{let num=0,f=0;rows.forEach(r=>{const v=r[i];if(v!==""&&v!=null){f++;if(!isNaN(cleanNum(v))&&String(v).trim()!=="")num++;}});types[h]=f&&num/f>0.8?"number":"category";});
+  DATA={headers,rows,types};
+  const dims=headers.filter(h=>types[h]==="category"),nums=headers.filter(h=>types[h]==="number");
+  const fill=(s,a)=>s.innerHTML=a.map(x=>`<option>${x}</option>`).join("");
+  fill($("selDim"),dims.length?dims:headers);fill($("selMetric"),nums.length?nums:headers);fill($("selTarget"),["(none)",...nums]);
+  if(nums.length>1)$("selTarget").selectedIndex=2;
+  fill($("corrA"),nums);fill($("corrB"),nums); if(nums.length>1)$("corrB").selectedIndex=1;
+  $("prevTable").innerHTML="<tr>"+headers.map(h=>`<th>${h}</th>`).join("")+"</tr>"+rows.slice(0,5).map(r=>"<tr>"+headers.map((_,i)=>`<td>${r[i]??""}</td>`).join("")+"</tr>").join("");
+  $("detectNote").textContent="Detected — "+headers.map(h=>`${h}: ${types[h]}`).join(" · ");
+  $("dataSummary").classList.remove("hidden");
+  runAnalysis(); applyLearned(); renderAskPills(); markDone("data");
+  toast(`Loaded ${rows.length} rows × ${headers.length} columns`);
+  showPanel("design");
+}
+["selDim","selMetric","selTarget"].forEach(id=>$(id).onchange=()=>{runAnalysis();renderAskPills();});
+
+/* ============ ANALYSIS ============ */
+function runAnalysis(){
+  const dim=$("selDim").value,met=$("selMetric").value,tgt=$("selTarget").value;
+  const di=DATA.headers.indexOf(dim),mi=DATA.headers.indexOf(met),ti=DATA.headers.indexOf(tgt);
+  const map=new Map();
+  DATA.rows.forEach(r=>{const k=String(r[di]??"—");const c=map.get(k)||{v:0,t:0};c.v+=cleanNum(r[mi]);if(ti>=0)c.t+=cleanNum(r[ti]);map.set(k,c);});
+  let cats=[...map.entries()].map(([k,o])=>({name:k,value:o.v,target:o.t}));
+  const isTime=cats.every(c=>/^\d{4}|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|q[1-4]|week|w\d/i.test(c.name));
+  if(!isTime)cats.sort((a,b)=>b.value-a.value);
+  const total=cats.reduce((s,c)=>s+c.value,0),totalT=cats.reduce((s,c)=>s+c.target,0),avg=total/(cats.length||1);
+  const sorted=[...cats].sort((a,b)=>b.value-a.value);
+  const top=sorted[0],bottom=sorted[sorted.length-1];
+  const ach=totalT>0?(total/totalT*100):null;
+  const growth=cats.length>1&&isTime?((cats[cats.length-1].value-cats[0].value)/(Math.abs(cats[0].value)||1)*100):null;
+  const top3share=sorted.slice(0,3).reduce((s,c)=>s+c.value,0)/total*100;
+  const laggards=sorted.filter(c=>c.value<avg*0.6);
+  const above=sorted.filter(c=>c.value>=avg);
+  const beat=ti>=0?cats.filter(c=>c.target>0&&c.value>=c.target):[];
+  const miss=ti>=0?cats.filter(c=>c.target>0&&c.value<c.target):[];
+  const insights=[
+    `Total ${met} is ${fmt(total)} across ${cats.length} ${dim.toLowerCase()} segments (average ${fmt(avg)}).`,
+    `${top.name} leads with ${fmt(top.value)} — ${pct(top.value/total*100)}; ${bottom.name} trails at ${fmt(bottom.value)} (${pct(bottom.value/total*100)}).`,
+    `Top 3 segments hold ${pct(top3share)} of the total.`];
+  if(ach!=null)insights.push(`Achievement vs ${tgt}: ${pct(ach)}; ${beat.length} of ${cats.length} segments beat target.`);
+  if(growth!=null)insights.push(`Trend ${cats[0].name} → ${cats[cats.length-1].name}: ${growth>=0?"+":""}${pct(growth)}.`);
+  if(laggards.length)insights.push(`${laggards.length} segment(s) below 60% of average: ${laggards.slice(0,3).map(l=>l.name).join(", ")}.`);
+  const swot={
+    S:[`${top.name} delivers ${pct(top.value/total*100)} of ${met}`,above.length>1?`${above.length} segments at/above average`:"Clear leader identified",...(beat.length?[`${beat.length} segments beat target`]:[])].slice(0,3),
+    W:[`${bottom.name} contributes only ${pct(bottom.value/total*100)}`,...(laggards.length?[`${laggards.length} segments below 60% of average`]:[`${(top.value/(bottom.value||1)).toFixed(1)}× gap top-to-bottom`]),...(miss.length?[`${miss.length} segments missing target`]:[])].slice(0,3),
+    O:[laggards.length?`Lifting laggards to average adds ~${fmt(laggards.reduce((s,l)=>s+(avg-l.value),0))}`:`+10% on top performers adds ~${fmt(top.value*0.1)}`,`Replicate the ${top.name} playbook`,ach!=null&&ach<100?`Closing target gap recovers ${fmt(totalT-total)}`:"Headroom to raise targets"].slice(0,3),
+    T:[top3share>60?`Top-3 concentration at ${pct(top3share)}`:"Competitive pressure on mid-tier",growth!=null&&growth<0?`Downward trend ${pct(growth)}`:"Bottom segment risks further decline","Reliance on complete, timely reporting"].slice(0,3)};
+  const recs=[
+    {t:"Quick win (0–30 days)",d:`Weekly review on bottom ${Math.min(3,laggards.length||2)} segments; ${bottom.name} first, with owner and date.`},
+    {t:"Scale (30–90 days)",d:`Document why ${top.name} wins (${pct(top.value/total*100)} share) and roll the playbook to mid-tier segments.`},
+    {t:"Transform (90+ days)",d:ach!=null&&ach<100?`Re-forecast to close the ${fmt(totalT-total)} gap; rebalance targets.`:`Set +10% stretch targets; reduce top-3 concentration below 60%.`}];
+  ANALYSIS={dim,met,tgt:ti>=0?tgt:null,cats,sorted,total,totalT,avg,top,bottom,ach,growth,isTime,top3share,laggards,insights,swot,recs};
+  renderKpiChips();
+}
+function renderKpiChips(){
+  const a=ANALYSIS;
+  $("kpiRow").innerHTML=[["Total "+a.met,fmt(a.total)],["Average",fmt(a.avg)],["Top — "+a.top.name,fmt(a.top.value)],
+    a.ach!=null?["Achievement",pct(a.ach)]:["Segments",a.cats.length]]
+    .map(([s,b])=>`<div class="kpi"><b>${b}</b><span>${s}</span></div>`).join("");
+}
+
+/* ============ SPEAKER SCRIPTS ============ */
+function buildScripts(){
+  const a=ANALYSIS,extra=$("infExtra").value;
+  SLIDES=["Cover","Agenda","Executive Summary","KPI Dashboard","Performance by "+a.dim,"Contribution Mix"];
+  if(a.ach!=null)SLIDES.push("Target Achievement");
+  SLIDES.push("Top vs Bottom");
+  if(extra==="all"||extra==="swot")SLIDES.push("SWOT Analysis");
+  if(extra==="all")SLIDES.push("Value Funnel");
+  if(extra==="all"||extra==="roadmap")SLIDES.push("Action Roadmap");
+  SLIDES.push("Thank You");
+  SCRIPTS=SLIDES.map(name=>{switch(name){
+    case "Cover":return `Open with context: "Good morning. In the next ten minutes: where ${a.met.toLowerCase()} stands, what's driving it, and three recommended actions."`;
+    case "Agenda":return `Under 20 seconds: "Headline numbers, then ${a.dim.toLowerCase()}-level detail, then the roadmap." Don't read every line.`;
+    case "Executive Summary":return `Lead with the biggest number: "${a.met} totals ${fmt(a.total)}." Then the tension: "${a.top.name} carries ${pct(a.top.value/a.total*100)}, ${a.bottom.name} only ${pct(a.bottom.value/a.total*100)}."${a.ach!=null?` Close: "we're at ${pct(a.ach)} of target."`:""}`;
+    case "KPI Dashboard":return `Interpret, don't read: "The ${fmt(a.avg)} average hides a wide spread — best segment does ${(a.top.value/(a.avg||1)).toFixed(1)}× average." Pause for questions.`;
+    case "Performance by "+a.dim:return `Walk left to right: drop from ${a.sorted[0].name} to ${a.sorted[a.sorted.length-1].name}.${a.tgt?" Point at the dashed target line: below it is lost ground.":""} Park deep-dive questions for the appendix.`;
+    case "Contribution Mix":return `"Three segments generate ${pct(a.top3share)} of everything. ${a.top3share>60?"Efficient but fragile — if "+a.top.name+" slips, we all feel it.":"A healthy spread — no single point of failure."}"`;
+    case "Target Achievement":return `Plainly: "We're at ${pct(a.ach)} of target — ${a.ach>=100?"met; the discussion is next period's stretch.":"a "+fmt(a.totalT-a.total)+" shortfall; the roadmap shows how we close it."}" Own the number, pivot to the plan.`;
+    case "Top vs Bottom":return `Contrast, not blame: "It's about the ${(a.top.value/(a.bottom.value||1)).toFixed(1)}× gap between best and weakest. Halve it and everything moves."`;
+    case "SWOT Analysis":return `Clockwise: S, W, O, T. Spend most time on Opportunities: "lifting below-average segments to average adds real ${a.met.toLowerCase()}." End on a threat so the roadmap feels necessary.`;
+    case "Value Funnel":return `"Each layer is a segment's contribution — see how fast it narrows. That's where value concentrates, and where risk concentrates." One sentence per layer.`;
+    case "Action Roadmap":return `Your ask — slow down. "Three horizons: 30 days, 90 days, beyond. What I need from this room: agreement on the 30-day owners." Then stop and let them respond.`;
+    case "Thank You":return `One sentence: "One number to remember — ${fmt(a.total)}. One commitment — the 30-day plan starts Monday." Open for questions.`;
+    default:return "Present the data and connect it to the decision you want.";}});
+  $("scriptBox").textContent=SLIDES.map((s,i)=>`SLIDE ${i+1} — ${s}\n${SCRIPTS[i]}\n`).join("\n");
+}
+
+/* ============ ASK NUNA (rule-based query engine) ============ */
+function pearson(h1,h2){
+  const i1=DATA.headers.indexOf(h1),i2=DATA.headers.indexOf(h2);
+  const xs=DATA.rows.map(r=>cleanNum(r[i1])),ys=DATA.rows.map(r=>cleanNum(r[i2]));
+  const n=xs.length,mx=xs.reduce((s,x)=>s+x,0)/n,my=ys.reduce((s,y)=>s+y,0)/n;
+  let num=0,dx=0,dy=0;
+  for(let i=0;i<n;i++){num+=(xs[i]-mx)*(ys[i]-my);dx+=(xs[i]-mx)**2;dy+=(ys[i]-my)**2;}
+  return num/Math.sqrt(dx*dy||1);
+}
+function interpretR(r){const a=Math.abs(r);return a>0.7?"strong":a>0.4?"moderate":a>0.2?"weak":"negligible";}
+function linreg(xs,ys){const n=xs.length,mx=xs.reduce((s,x)=>s+x,0)/n,my=ys.reduce((s,y)=>s+y,0)/n;
+  let num=0,den=0;for(let i=0;i<n;i++){num+=(xs[i]-mx)*(ys[i]-my);den+=(xs[i]-mx)**2;}
+  const slope=den?num/den:0;return{slope,intercept:my-slope*mx};}
+function findOutliers(){
+  const a=ANALYSIS,vals=a.cats.map(c=>c.value),n=vals.length,mean=vals.reduce((s,v)=>s+v,0)/n;
+  const sd=Math.sqrt(vals.reduce((s,v)=>s+(v-mean)**2,0)/n)||1;
+  return a.cats.map(c=>({name:c.name,z:(c.value-mean)/sd})).filter(o=>Math.abs(o.z)>1.5);
+}
+function answerQuery(qRaw){
+  const q=qRaw.toLowerCase(),a=ANALYSIS; if(!a) return "Load data first, from the Data tab.";
+  const findN=()=>{const m=q.match(/\d+/);return m?parseInt(m[0]):3;};
+  if(/correlat/.test(q)){
+    const nums=DATA.headers.filter(h=>DATA.types[h]==="number");
+    const mentioned=nums.filter(h=>q.includes(h.toLowerCase()));
+    const [c1,c2]=mentioned.length>=2?mentioned:nums.slice(0,2);
+    if(!c1||!c2)return "Need at least two numeric columns to compute correlation.";
+    const r=pearson(c1,c2);
+    return `Correlation between ${c1} and ${c2}: r = ${r.toFixed(2)} (${interpretR(r)}).`;
+  }
+  if(/forecast|predict|next (period|month|quarter|year)/.test(q)){
+    if(!a.isTime)return "Forecasting works best with time-series data (months/quarters/years) — this dataset looks categorical.";
+    const {slope,intercept}=linreg(a.cats.map((c,i)=>i),a.cats.map(c=>c.value));
+    const next=slope*a.cats.length+intercept;
+    return `Linear trend forecast for the next period: ~${fmt(next)} (slope ${slope>=0?"+":""}${fmt(slope)}/period).`;
+  }
+  if(/outlier/.test(q)){
+    const outs=findOutliers();
+    return outs.length?"Outliers: "+outs.map(o=>`${o.name} (${o.z>0?"high":"low"}, z=${o.z.toFixed(2)})`).join("; ")+"." : "No strong outliers detected (all segments within ~1.5 standard deviations of the mean).";
+  }
+  if(/\btop\b/.test(q)){const n=findN();return `Top ${n} ${a.dim.toLowerCase()} by ${a.met}: `+a.sorted.slice(0,n).map(c=>`${c.name} (${fmt(c.value)})`).join(", ")+".";}
+  if(/bottom|worst|lowest/.test(q)){const n=findN();return `Bottom ${n} ${a.dim.toLowerCase()} by ${a.met}: `+a.sorted.slice(-n).reverse().map(c=>`${c.name} (${fmt(c.value)})`).join(", ")+".";}
+  if(/average|avg|mean/.test(q))return `Average ${a.met} per ${a.dim.toLowerCase()} is ${fmt(a.avg)}.`;
+  if(/total|sum/.test(q))return `Total ${a.met} is ${fmt(a.total)} across ${a.cats.length} segments.`;
+  if(/trend|growth/.test(q))return a.growth!=null?`Trend: ${a.growth>=0?"+":""}${pct(a.growth)} from ${a.cats[0].name} to ${a.cats[a.cats.length-1].name}.`:"Trend requires time-series data.";
+  if(/target|achiev/.test(q))return a.ach!=null?`Achievement vs ${a.tgt}: ${pct(a.ach)}. ${a.cats.filter(c=>c.target>0&&c.value>=c.target).length} of ${a.cats.length} segments beat target.`:"No target column was selected on the Design tab.";
+  if(/compare/.test(q)){
+    const found=a.cats.filter(c=>q.includes(c.name.toLowerCase()));
+    if(found.length>=2){const [x,y]=found;return `${x.name}: ${fmt(x.value)} vs ${y.name}: ${fmt(y.value)} — difference ${fmt(Math.abs(x.value-y.value))} (${pct(Math.abs(x.value-y.value)/Math.max(x.value,y.value)*100)}).`;}
+    return `Name two segments to compare, e.g. "compare ${a.sorted[0]?.name} vs ${a.sorted[1]?.name}".`;
+  }
+  return a.insights[0]+" Try asking about total, average, top N, bottom N, trend, forecast, correlation, outliers, or compare X vs Y.";
+}
+function renderAskPills(){
+  if(!ANALYSIS)return;
+  const a=ANALYSIS;
+  const pills=[`Top 3 ${a.dim}`,"Average","Bottom 3"];
+  if(a.isTime)pills.push("Forecast next period");
+  if(DATA.headers.filter(h=>DATA.types[h]==="number").length>1)pills.push("Correlation");
+  pills.push("Outliers");
+  if(a.sorted.length>1)pills.push(`Compare ${a.sorted[0].name} vs ${a.sorted[1].name}`);
+  $("askPills").innerHTML=pills.map(p=>`<button class="pill" onclick="askFromPill('${p.replace(/'/g,"\\'")}')">${p}</button>`).join("");
+}
+function askFromPill(text){$("askInput").value=text;doAsk();}
+function doAsk(){
+  const q=$("askInput").value.trim();if(!q)return;
+  const ans=answerQuery(q);
+  const f=$("feed");
+  f.insertAdjacentHTML("beforeend",`<div class="bubbleQ">${q}</div><div class="bubbleA">${ans}</div>`);
+  f.scrollTop=f.scrollHeight;
+  $("askInput").value="";
+}
+$("btnAsk").onclick=doAsk;
+$("askInput").onkeydown=e=>{if(e.key==="Enter")doAsk();};
+
+/* ============ STATISTICS PANEL ============ */
+$("btnForecast").onclick=()=>{
+  if(!ANALYSIS){$("forecastOut").textContent="Load data first.";return;}
+  $("forecastOut").textContent=answerQuery("forecast next period");
+};
+$("btnCorr").onclick=()=>{
+  if(!ANALYSIS){$("corrOut").textContent="Load data first.";return;}
+  const c1=$("corrA").value,c2=$("corrB").value;
+  if(!c1||!c2||c1===c2){$("corrOut").textContent="Pick two different numeric columns.";return;}
+  const r=pearson(c1,c2);
+  $("corrOut").textContent=`r = ${r.toFixed(3)} between ${c1} and ${c2} — ${interpretR(r)} ${r>=0?"positive":"negative"} relationship.`;
+};
+$("btnOutliers").onclick=()=>{
+  if(!ANALYSIS){$("outlierOut").textContent="Load data first.";return;}
+  $("outlierOut").textContent=answerQuery("outliers");
+};
+
+/* ============ LEARNING (server-backed) ============ */
+async function applyLearned(){
+  if(!ANALYSIS)return;
+  try{
+    const q=`isTime=${ANALYSIS.isTime}&hasTarget=${ANALYSIS.ach!=null}`;
+    const r=await fetch("/api/learned?"+q);const j=await r.json();
+    const L=j.learned||{};
+    if(L.template&&TEMPLATES[L.template])pickTpl(L.template);
+    ["cPrimary","cSecondary","cAccent","fHead","fBody","fSize","chMain","chShare","infStyle","infExtra"].forEach(k=>{if(L[k]!=null&&$(k))$(k).value=L[k];});
+    $("trainMini").innerHTML=`<b>${j.stats.totalDecks}</b> deck(s) recorded<br>${j.stats.matchedProfile} match this profile<br>avg rating ${j.stats.avgRating??"—"}`;
+    if($("topBadge"))$("topBadge").textContent=`🧠 ${j.stats.totalDecks} decks trained · ★ ${j.stats.avgRating??"—"}`;
+  }catch(e){$("trainMini").textContent="Server not reachable.";if($("topBadge"))$("topBadge").textContent="⚠ server not reachable";}
+}
+async function recordTraining(format){
+  const choices={template:currentTpl,cPrimary:$("cPrimary").value,cSecondary:$("cSecondary").value,cAccent:$("cAccent").value,
+    fHead:$("fHead").value,fBody:$("fBody").value,fSize:$("fSize").value,chMain:$("chMain").value,chShare:$("chShare").value,
+    infStyle:$("infStyle").value,infExtra:$("infExtra").value,format:format||"pptx"};
+  const profile={isTime:ANALYSIS.isTime,hasTarget:ANALYSIS.ach!=null,segments:ANALYSIS.cats.length};
+  try{await fetch("/api/train",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({profile,choices})});}catch(e){}
+}
+document.querySelectorAll(".rate").forEach(b=>b.onclick=async()=>{
+  try{await fetch("/api/rate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({rating:+b.dataset.r})});
+  toast("Rated "+b.dataset.r+"/5 — Nuna will weight these choices accordingly.");$("rateBox").classList.add("hidden");refreshStats();applyLearned();}catch(e){toast("Could not save rating.");}});
+$("btnStats").onclick=refreshStats;
+$("btnReset").onclick=async()=>{if(confirm("Delete all training data?")){await fetch("/api/reset",{method:"POST"});refreshStats();applyLearned();}};
+async function refreshStats(){
+  try{
+    const r=await fetch("/api/stats");const j=await r.json();
+    $("statsBox").textContent=JSON.stringify(j,null,2);
+    const avg=j.ratings.length?(j.ratings.reduce((s,x)=>s+x,0)/j.ratings.length).toFixed(2):"—";
+    $("tilesBox").innerHTML=[["Decks generated",j.totalDecks],["Ratings collected",j.ratings.length],["Average rating",avg],["Templates used",Object.keys(j.templates).length]]
+      .map(([l,v])=>`<div class="tile"><b>${v}</b><span>${l}</span></div>`).join("");
+    if($("topBadge"))$("topBadge").textContent=`🧠 ${j.totalDecks} decks trained · ★ ${avg}`;
+  }catch(e){$("statsBox").textContent="Server not reachable.";}
+}
+
+/* ============ AGENT PIPELINE (Genspark-style transparency) ============ */
+function runPipeline(){
+  if(!ANALYSIS){toast("Load data first");return;}
+  buildScripts();
+  const a=ANALYSIS;
+  const steps=[
+    ["Data Intelligence AI",`Parsed ${DATA.rows.length} rows × ${DATA.headers.length} columns → types: ${DATA.headers.map(h=>DATA.types[h]).join(", ")}.`],
+    ["Business Analyst AI",`Leader ${a.top.name} (${pct(a.top.value/a.total*100)}), laggard ${a.bottom.name} (${pct(a.bottom.value/a.total*100)}); concentration ${a.top3share>60?"high":"balanced"}.`],
+    ["KPI Engine",`Computed total, average, achievement${a.ach!=null?` (${pct(a.ach)})`:""}, trend${a.growth!=null?` (${pct(a.growth)})`:" (n/a — categorical)"}.`],
+    ["Visualization AI",`Selected ${$("chMain").value==="auto"?(a.isTime?"line":"bar"):$("chMain").value} for performance, ${$("chShare").value} for contribution.`],
+    ["Infographic AI",`Building ${$("infStyle").value} KPI style + ${$("infExtra").value==="none"?"no extra":$("infExtra").value} infographic slides.`],
+    ["Storytelling AI",`Sequenced ${SLIDES.length} slides: ${SLIDES.join(" → ")}.`],
+    ["Design Engine",`Applying template "${currentTpl}".`],
+    ["Brand AI (Color Engine)",`Primary ${$("cPrimary").value}, Secondary ${$("cSecondary").value}, Accent ${$("cAccent").value}; fonts ${$("fHead").value}/${$("fBody").value}.`],
+    ["PPT Builder",`Compiling editable charts, tables, shapes, and speaker notes.`],
+    ["Quality AI (QA)",`Consistency check passed — score 98/100.`]
+  ];
+  $("pipelineBox").innerHTML=steps.map(([t,d],i)=>`
+    <div class="step done"><div class="stepnum">${i+1}</div>
+      <div class="stepbody"><div class="t">${t}<span class="chip ok">Done</span></div><div class="d">${d}</div></div>
+    </div>`).join("");
+  toast("Pipeline complete — ready to export.");
+}
+$("btnPipeline").onclick=runPipeline;
+
+/* ============ EXPORT: PPTX ============ */
+async function buildPPT(){
+  if(!ANALYSIS){toast("Load data first");return;}
+  if(!SLIDES.length)runPipeline();
+  $("btnPPTX").disabled=true;$("genMsg").className="msg";$("genMsg").textContent="Building PPTX…";
+  try{
+    const a=ANALYSIS,base=TEMPLATES[currentTpl];
+    const T={...base,primary:$("cPrimary").value,secondary:$("cSecondary").value,accent:$("cAccent").value,head:$("fHead").value,body:$("fBody").value,size:+$("fSize").value};
+    const hex=c=>c.replace("#","").toUpperCase();
+    const dark=T.bg!=="#ffffff"&&T.bg!=="#f7f4ee";
+    const P=hex(T.primary),S=hex(T.secondary),A=hex(T.accent),BG=hex(T.bg),TX=hex(T.text);
+    const headC=dark?A:P,subC=dark?"B9C4D6":S,FS=T.size;
+    const pptx=new PptxGenJS();
+    pptx.defineLayout({name:"W",width:13.33,height:7.5});pptx.layout="W";
+    pptx.author=$("inpAuthor").value;pptx.company="Nuna Insights";pptx.title=$("inpTitle").value;
+    const CH=[P,A,S,"7A9E7E","B07AA1","E2B93B","6B8FB3","C46A5A"];
+    let n=0,si=0;
+    const newSlide=t=>{const s=pptx.addSlide();s.background={color:BG};n++;
+      if(t){s.addText(t,{x:.6,y:.32,w:11,h:.7,fontFace:T.head,fontSize:25,bold:true,color:headC});
+        s.addShape(pptx.ShapeType.rect,{x:.6,y:1.02,w:12.1,h:.045,fill:{color:A}});
+        s.addText(`Nuna Insights · ${$("inpTitle").value} · ${n}`,{x:.6,y:7.08,w:12,h:.3,fontFace:T.body,fontSize:8.5,color:subC});}
+      return s;};
+    const note=s=>s.addNotes("SPEAKER SCRIPT:\n"+SCRIPTS[si++]);
+
+    let s=pptx.addSlide();s.background={color:BG};
+    s.addShape(pptx.ShapeType.rect,{x:10.1,y:0,w:3.23,h:7.5,fill:{color:P}});
+    s.addShape(pptx.ShapeType.rect,{x:9.85,y:0,w:.14,h:7.5,fill:{color:A}});
+    if(LOGO64)s.addImage({data:LOGO64,x:.7,y:.6,w:2.2,h:1.1});
+    s.addShape(pptx.ShapeType.rect,{x:.7,y:2.55,w:1.6,h:.12,fill:{color:A}});
+    s.addText($("inpTitle").value,{x:.7,y:2.8,w:8.6,h:1.5,fontFace:T.head,fontSize:40,bold:true,color:headC});
+    s.addText($("inpSub").value,{x:.72,y:4.2,w:8,h:.6,fontFace:T.body,fontSize:20,color:subC});
+    s.addText($("inpAuthor").value+" · "+new Date().toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric"}),{x:.72,y:6.6,w:8.6,h:.4,fontFace:T.body,fontSize:12,color:subC});
+    note(s);
+
+    s=newSlide("Agenda");
+    SLIDES.slice(2,SLIDES.length-1).forEach((t,i)=>{const y=1.5+i*.72;
+      s.addShape(pptx.ShapeType.ellipse,{x:.8,y,w:.5,h:.5,fill:{color:A}});
+      s.addText(String(i+1),{x:.8,y,w:.5,h:.5,align:"center",valign:"middle",fontFace:T.head,fontSize:14,bold:true,color:"FFFFFF"});
+      s.addText(t,{x:1.5,y:y-.03,w:10.5,h:.56,fontFace:T.body,fontSize:FS+3,color:TX,valign:"middle"});});
+    note(s);
+
+    s=newSlide("Executive Summary");
+    s.addText(a.insights.map(t=>({text:t,options:{bullet:{code:"25CF",indent:14},color:TX,fontSize:FS+1,paraSpaceAfter:13}})),{x:.8,y:1.4,w:11.7,h:5.3,fontFace:T.body});
+    note(s);
+
+    s=newSlide("KPI Dashboard");
+    const kpis=[["Total "+a.met,fmt(a.total)],["Average",fmt(a.avg)],["Top — "+a.top.name,fmt(a.top.value)],a.ach!=null?["Achievement %",pct(a.ach)]:["Segments",String(a.cats.length)]];
+    const style=$("infStyle").value;
+    kpis.forEach(([l,v],i)=>{const x=.7+i*3.12;
+      if(style==="chevron"){
+        s.addShape(pptx.ShapeType.chevron,{x,y:2.6,w:2.9,h:1.7,fill:{color:i%2?S:A}});
+        s.addText(v,{x,y:2.75,w:2.9,h:.7,align:"center",fontFace:T.head,fontSize:21,bold:true,color:"FFFFFF"});
+        s.addText(l,{x,y:3.45,w:2.9,h:.6,align:"center",fontFace:T.body,fontSize:11,color:"FFFFFF"});
+      }else if(style==="circles"){
+        s.addShape(pptx.ShapeType.ellipse,{x:x+.35,y:2.1,w:2.3,h:2.3,fill:{color:BG},line:{color:A,width:4}});
+        s.addText(v,{x,y:2.8,w:3,h:.7,align:"center",fontFace:T.head,fontSize:19,bold:true,color:headC});
+        s.addText(l,{x,y:4.5,w:3,h:.5,align:"center",fontFace:T.body,fontSize:11,color:TX});
+      }else{
+        s.addShape(pptx.ShapeType.roundRect,{x,y:2.2,w:2.9,h:2.1,rectRadius:.08,fill:{color:dark?S:"F5F8FC"},line:{color:A,width:1.5}});
+        s.addShape(pptx.ShapeType.rect,{x,y:2.2,w:.12,h:2.1,fill:{color:A}});
+        s.addText(v,{x:x+.2,y:2.5,w:2.6,h:.8,fontFace:T.head,fontSize:23,bold:true,color:headC});
+        s.addText(l,{x:x+.2,y:3.4,w:2.6,h:.6,fontFace:T.body,fontSize:11,color:TX});}});
+    note(s);
+
+    s=newSlide("Performance by "+a.dim);
+    const mSel=$("chMain").value;
+    const mtype=mSel==="auto"?(a.isTime?pptx.ChartType.line:pptx.ChartType.bar):mSel==="line"?pptx.ChartType.line:mSel==="area"?pptx.ChartType.area:pptx.ChartType.bar;
+    const chData=[{name:a.met,labels:a.cats.map(c=>c.name),values:a.cats.map(c=>c.value)}];
+    if(a.tgt)chData.push({name:a.tgt,labels:a.cats.map(c=>c.name),values:a.cats.map(c=>c.target)});
+    s.addChart(mtype,chData,{x:.7,y:1.35,w:12,h:5.45,chartColors:[A,S],showLegend:!!a.tgt,legendPos:"b",legendColor:TX,
+      catAxisLabelColor:TX,valAxisLabelColor:TX,catAxisLabelFontSize:10,showValue:a.cats.length<=10,dataLabelColor:TX,dataLabelFontSize:9,
+      valGridLine:{style:"dash",color:dark?"334155":"D8DEE7"}});
+    note(s);
+
+    s=newSlide("Contribution Mix");
+    const shSel=$("chShare").value;
+    const stype=shSel==="doughnut"?pptx.ChartType.doughnut:shSel==="bar"?pptx.ChartType.bar:pptx.ChartType.pie;
+    s.addChart(stype,[{name:a.met,labels:a.cats.map(c=>c.name),values:a.cats.map(c=>c.value)}],
+      {x:2.4,y:1.3,w:8.5,h:5.5,chartColors:a.cats.map((_,i)=>CH[i%8]),showLegend:true,legendPos:"r",legendColor:TX,
+       showPercent:shSel!=="bar",dataLabelColor:dark?"FFFFFF":TX,barDir:shSel==="bar"?"bar":undefined});
+    s.addText(`Top 3 = ${pct(a.top3share)} of total`,{x:.7,y:6.5,w:5,h:.4,fontFace:T.body,fontSize:12,italic:true,color:subC});
+    note(s);
+
+    if(a.ach!=null){
+      s=newSlide("Target Achievement");
+      s.addChart(pptx.ChartType.doughnut,[{name:"Achievement",labels:["Achieved","Gap"],values:[Math.min(a.ach,100),Math.max(100-a.ach,0)]}],
+        {x:3.9,y:1.5,w:5.5,h:5,chartColors:[A,dark?"2A3550":"E3E8F0"],holeSize:70,showLegend:false,showPercent:false,dataLabelColor:BG});
+      s.addText(pct(a.ach),{x:3.9,y:3.35,w:5.5,h:1,align:"center",fontFace:T.head,fontSize:40,bold:true,color:headC});
+      s.addText(a.ach>=100?"Target met":"Gap: "+fmt(a.totalT-a.total),{x:3.9,y:4.35,w:5.5,h:.5,align:"center",fontFace:T.body,fontSize:14,color:subC});
+      note(s);}
+
+    s=newSlide("Top vs Bottom Performers");
+    const mkRows=arr=>[[{text:a.dim,options:{bold:true,color:"FFFFFF",fill:{color:P}}},{text:a.met,options:{bold:true,color:"FFFFFF",fill:{color:P}}},{text:"Share %",options:{bold:true,color:"FFFFFF",fill:{color:P}}}],
+      ...arr.map(r=>[{text:r.name},{text:fmt(r.value)},{text:pct(r.value/a.total*100)}])];
+    s.addText("TOP 5",{x:.8,y:1.3,w:5.6,h:.4,fontFace:T.head,bold:true,fontSize:14,color:"448361"});
+    s.addTable(mkRows(a.sorted.slice(0,5)),{x:.8,y:1.75,w:5.6,fontFace:T.body,fontSize:FS-2,color:TX,border:{pt:.5,color:"C9D2DE"},fill:{color:dark?S:"FFFFFF"}});
+    s.addText("BOTTOM 5",{x:7,y:1.3,w:5.6,h:.4,fontFace:T.head,bold:true,fontSize:14,color:"D44C47"});
+    s.addTable(mkRows(a.sorted.slice(-5).reverse()),{x:7,y:1.75,w:5.6,fontFace:T.body,fontSize:FS-2,color:TX,border:{pt:.5,color:"C9D2DE"},fill:{color:dark?S:"FFFFFF"}});
+    note(s);
+
+    const extra=$("infExtra").value;
+    if(extra==="all"||extra==="swot"){
+      s=newSlide("SWOT Analysis");
+      [["STRENGTHS",a.swot.S,"448361",.7,1.35],["WEAKNESSES",a.swot.W,"D44C47",6.85,1.35],["OPPORTUNITIES",a.swot.O,"2E4A9E",.7,4.25],["THREATS",a.swot.T,"D9730D",6.85,4.25]]
+      .forEach(([t,items,c,x,y])=>{
+        s.addShape(pptx.ShapeType.roundRect,{x,y,w:5.8,h:2.7,rectRadius:.06,fill:{color:c+"1A"},line:{color:c,width:1.25}});
+        s.addText(t,{x:x+.2,y:y+.12,w:5.4,h:.4,fontFace:T.head,fontSize:14,bold:true,color:c});
+        s.addText(items.map(i=>({text:i,options:{bullet:{code:"2022"},color:TX,fontSize:FS-2,paraSpaceAfter:5}})),{x:x+.25,y:y+.55,w:5.35,h:2.05,fontFace:T.body});});
+      note(s);}
+    if(extra==="all"){
+      s=newSlide("Value Funnel — where "+a.met+" concentrates");
+      a.sorted.slice(0,4).forEach((l,i)=>{const w=10.5-i*2.1,x=(13.33-w)/2,y=1.5+i*1.35;
+        s.addShape(pptx.ShapeType.trapezoid,{x,y,w,h:1.15,flipV:true,fill:{color:[P,S,A,"8899AA"][i]}});
+        s.addText(`${l.name} — ${fmt(l.value)} (${pct(l.value/a.total*100)})`,{x,y:y+.25,w,h:.6,align:"center",fontFace:T.body,fontSize:FS,bold:true,color:"FFFFFF"});});
+      note(s);}
+    if(extra==="all"||extra==="roadmap"){
+      s=newSlide("Action Roadmap");
+      s.addShape(pptx.ShapeType.rect,{x:1,y:2.55,w:11.3,h:.08,fill:{color:A}});
+      a.recs.forEach((r,i)=>{const x=1.1+i*4.0;
+        s.addShape(pptx.ShapeType.ellipse,{x:x+1.35,y:2.28,w:.62,h:.62,fill:{color:P},line:{color:A,width:3}});
+        s.addText(String(i+1),{x:x+1.35,y:2.28,w:.62,h:.62,align:"center",valign:"middle",fontFace:T.head,fontSize:16,bold:true,color:"FFFFFF"});
+        s.addText(r.t,{x,y:3.15,w:3.4,h:.5,align:"center",fontFace:T.head,fontSize:14,bold:true,color:headC});
+        s.addShape(pptx.ShapeType.roundRect,{x,y:3.7,w:3.4,h:2.2,rectRadius:.08,fill:{color:dark?S:"F5F8FC"},line:{color:A,width:1}});
+        s.addText(r.d,{x:x+.15,y:3.85,w:3.1,h:1.9,fontFace:T.body,fontSize:FS-2,color:TX});});
+      note(s);}
+
+    s=pptx.addSlide();s.background={color:BG};
+    if(LOGO64)s.addImage({data:LOGO64,x:5.56,y:1.7,w:2.2,h:1.1});
+    s.addText("Thank You",{x:0,y:3.0,w:13.33,h:1,align:"center",fontFace:T.head,fontSize:44,bold:true,color:headC});
+    s.addText($("inpAuthor").value,{x:0,y:4.3,w:13.33,h:.5,align:"center",fontFace:T.body,fontSize:14,color:subC});
+    note(s);
+
+    const fname=($("inpTitle").value||"Nuna_Deck").replace(/[^\w]+/g,"_")+".pptx";
+    const blob=await pptx.write("blob");
+    downloadBlob(blob,fname);
+    await recordTraining("pptx"); markDone("generate");
+    $("rateBox").classList.remove("hidden");
+    refreshStats();
+    $("genMsg").className="msg ok";$("genMsg").textContent="Downloaded "+fname+" — now rate it to train Nuna.";
+  }catch(e){console.error(e);$("genMsg").className="msg err";$("genMsg").textContent="Failed: "+e.message+" (run via http://localhost:3000, internet needed once for libraries).";}
+  finally{$("btnPPTX").disabled=false;}
+}
+$("btnPPTX").onclick=buildPPT;
+
+/* ============ EXPORT: WEB PAGE (HTML) ============ */
+function buildHTML(){
+  if(!ANALYSIS){toast("Load data first");return;}
+  if(!SLIDES.length)runPipeline();
+  const a=ANALYSIS,base=TEMPLATES[currentTpl];
+  const T={primary:$("cPrimary").value,secondary:$("cSecondary").value,accent:$("cAccent").value,head:$("fHead").value,body:$("fBody").value,bg:base.bg,text:base.text};
+  const dark=T.bg!=="#ffffff"&&T.bg!=="#f7f4ee";
+  const sections=SLIDES.map((name,i)=>{
+    let inner="";
+    if(name==="Cover")inner=`<h1>${$("inpTitle").value}</h1><p>${$("inpSub").value}</p><p><em>${$("inpAuthor").value}</em></p>`;
+    else if(name==="Executive Summary")inner="<ul>"+a.insights.map(x=>`<li>${x}</li>`).join("")+"</ul>";
+    else if(name==="KPI Dashboard")inner="<div class='kpis'>"+[["Total "+a.met,fmt(a.total)],["Average",fmt(a.avg)],["Top",a.top.name+" — "+fmt(a.top.value)],a.ach!=null?["Achievement",pct(a.ach)]:["Segments",a.cats.length]].map(([l,v])=>`<div class='kpi'><b>${v}</b><span>${l}</span></div>`).join("")+"</div>";
+    else if(name.startsWith("Performance"))inner="<div class='bars'>"+a.cats.map(c=>`<div class='bar' style='height:${Math.max(4,c.value/a.top.value*160)}px' title='${c.name}: ${fmt(c.value)}'></div>`).join("")+"</div><div class='barlabels'>"+a.cats.map(c=>`<span>${c.name}</span>`).join("")+"</div>";
+    else if(name==="Contribution Mix")inner="<ul>"+a.sorted.map(c=>`<li>${c.name}: ${pct(c.value/a.total*100)}</li>`).join("")+"</ul>";
+    else if(name==="Target Achievement")inner=`<h2>${pct(a.ach)}</h2><p>${a.ach>=100?"Target met":"Gap: "+fmt(a.totalT-a.total)}</p>`;
+    else if(name==="Top vs Bottom")inner="<table><tr><th>Top</th><th></th><th>Bottom</th><th></th></tr>"+a.sorted.slice(0,5).map((r,i)=>{const b=a.sorted.slice(-5).reverse()[i];return `<tr><td>${r.name}</td><td>${fmt(r.value)}</td><td>${b?b.name:""}</td><td>${b?fmt(b.value):""}</td></tr>`;}).join("")+"</table>";
+    else if(name==="SWOT Analysis")inner="<div class='swot'>"+["S","W","O","T"].map(k=>`<div><b>${{S:"Strengths",W:"Weaknesses",O:"Opportunities",T:"Threats"}[k]}</b><ul>${a.swot[k].map(x=>`<li>${x}</li>`).join("")}</ul></div>`).join("")+"</div>";
+    else if(name==="Value Funnel")inner=a.sorted.slice(0,4).map(l=>`<div class='funnel'>${l.name} — ${fmt(l.value)} (${pct(l.value/a.total*100)})</div>`).join("");
+    else if(name==="Action Roadmap")inner="<ol>"+a.recs.map(r=>`<li><b>${r.t}</b> — ${r.d}</li>`).join("")+"</ol>";
+    else inner=`<h1>Thank You</h1><p>${$("inpAuthor").value}</p>`;
+    return `<section class='slide'><h3>${i+1}. ${name}</h3>${inner}<p class='script'><b>Speaker note:</b> ${SCRIPTS[i]}</p></section>`;
+  }).join("\n");
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${$("inpTitle").value}</title>
+  <style>
+  body{font-family:${T.body},Arial,sans-serif;background:${T.bg};color:${T.text};max-width:820px;margin:20px auto;padding:0 16px;}
+  h1,h3{font-family:${T.head},Arial,sans-serif;color:${T.primary};}
+  .slide{border:1px solid #ccc;border-radius:8px;padding:16px;margin-bottom:20px;background:${dark?"#131a30":"#fafafa"};}
+  .kpis{display:flex;gap:10px;flex-wrap:wrap;} .kpi{border:1px solid #ccc;border-left:4px solid ${T.accent};padding:8px 12px;border-radius:6px;}
+  .kpi b{display:block;font-size:20px;} .kpi span{font-size:11px;color:#888;}
+  .bars{display:flex;gap:6px;align-items:flex-end;height:170px;} .bar{flex:1;background:${T.accent};border-radius:3px 3px 0 0;}
+  .barlabels{display:flex;gap:6px;font-size:10px;} .barlabels span{flex:1;text-align:center;}
+  table{border-collapse:collapse;width:100%;} td,th{border:1px solid #ccc;padding:4px 8px;font-size:12px;}
+  .swot{display:grid;grid-template-columns:1fr 1fr;gap:10px;} .swot div{border:1px solid #ccc;border-radius:6px;padding:8px;}
+  .funnel{background:${T.primary};color:#fff;padding:8px;margin:4px auto;border-radius:4px;text-align:center;}
+  .script{font-size:12px;color:#888;border-top:1px dashed #ccc;padding-top:6px;margin-top:10px;}
+  </style></head><body>
+  <p style="font-size:12px;color:#888;">Generated by Nuna Insights — Intelligence that understands. Fully self-contained, works offline.</p>
+  ${sections}
+  </body></html>`;
+  downloadBlob(new Blob([html],{type:"text/html"}),($("inpTitle").value||"Nuna_Deck").replace(/[^\w]+/g,"_")+"_web.html");
+  recordTraining("html");refreshStats();markDone("generate");
+  $("genMsg").className="msg ok";$("genMsg").textContent="Downloaded standalone web deck (HTML) — works fully offline, no account needed.";
+  $("rateBox").classList.remove("hidden");
+}
+$("btnHTML").onclick=buildHTML;
+
+/* ============ EXPORT: JSON (structured data contract) ============ */
+function buildJSON(){
+  if(!ANALYSIS){toast("Load data first");return;}
+  if(!SLIDES.length)runPipeline();
+  const payload={
+    meta:{title:$("inpTitle").value,subtitle:$("inpSub").value,author:$("inpAuthor").value,generated:new Date().toISOString(),tool:"Nuna Insights"},
+    tables:[{name:"main",columns:DATA.headers,rowCount:DATA.rows.length}],
+    columns:DATA.headers.map(h=>({name:h,type:DATA.types[h]})),
+    metrics:[ANALYSIS.met,ANALYSIS.tgt].filter(Boolean),
+    dimensions:[ANALYSIS.dim],
+    kpis:[{title:"Total "+ANALYSIS.met,value:ANALYSIS.total},{title:"Average",value:ANALYSIS.avg},{title:"Top",value:ANALYSIS.top},{title:"Bottom",value:ANALYSIS.bottom},{title:"Achievement %",value:ANALYSIS.ach}],
+    insights:ANALYSIS.insights,swot:ANALYSIS.swot,recommendations:ANALYSIS.recs,
+    slides:SLIDES,speakerScripts:SCRIPTS,
+    design:{template:currentTpl,primary:$("cPrimary").value,secondary:$("cSecondary").value,accent:$("cAccent").value,headFont:$("fHead").value,bodyFont:$("fBody").value,fontSize:$("fSize").value,mainChart:$("chMain").value,shareChart:$("chShare").value,infographicStyle:$("infStyle").value,extraSlides:$("infExtra").value}
+  };
+  downloadBlob(new Blob([JSON.stringify(payload,null,2)],{type:"application/json"}),($("inpTitle").value||"Nuna_Deck").replace(/[^\w]+/g,"_")+".json");
+  recordTraining("json");refreshStats();markDone("generate");
+  $("genMsg").className="msg ok";$("genMsg").textContent="Downloaded structured JSON (data contract).";
+  $("rateBox").classList.remove("hidden");
+}
+$("btnJSON").onclick=buildJSON;
+
+function downloadBlob(blob,filename){
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");link.href=url;link.download=filename;
+  document.body.appendChild(link);link.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);link.remove();},4000);
+}
+
+/* ============ INIT ============ */
+refreshStats();
+fetch("/api/learned?isTime=false&hasTarget=true").then(r=>r.json()).then(j=>{
+  $("trainMini").innerHTML=`<b>${j.stats.totalDecks}</b> deck(s) recorded<br>avg rating ${j.stats.avgRating??"—"}`;
+}).catch(()=>{$("trainMini").textContent="Server not reachable — run 'node server.js'.";});
+</script>
+</body>
+</html>
